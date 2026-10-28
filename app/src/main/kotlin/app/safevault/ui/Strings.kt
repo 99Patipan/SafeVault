@@ -1,0 +1,150 @@
+package app.safevault.ui
+
+/** All user-visible text (Thai is the default language). Keep texts here so a translation is a single-file change. */
+object Strings {
+    const val APP_NAME = "SafeVault"
+
+    // setup / unlock
+    const val SETUP_TITLE = "ตั้งรหัสหลัก"
+    const val SETUP_INTRO = "รหัสหลักใช้ปลดล็อกข้อมูลทั้งหมด แอปไม่เก็บรหัสหลักไว้ และผู้พัฒนาไม่สามารถกู้คืนให้ได้"
+    const val MASTER_PASSWORD = "รหัสหลัก"
+    const val CONFIRM_PASSWORD = "ยืนยันรหัสผ่าน"
+    const val MASTER_RULES = "ต้องยาวอย่างน้อย 12 ตัวอักษรและไม่เป็นรหัสที่เดาง่าย (แนะนำให้ใช้วลียาว ๆ หลายคำ)"
+    const val PASSWORDS_DONT_MATCH = "รหัสผ่านไม่ตรงกัน"
+    const val SETUP_ACK = "ฉันเข้าใจว่าหากลืมรหัสหลักและไม่มีไฟล์สำรองที่กู้คืนได้ จะไม่สามารถกู้ข้อมูลกลับมาได้"
+    const val CREATE_VAULT = "สร้างที่เก็บรหัสผ่าน"
+    const val UNLOCK = "ปลดล็อก"
+    const val UNLOCK_BIO = "ใช้ลายนิ้วมือ"
+    const val WRONG_PASSWORD = "รหัสหลักไม่ถูกต้อง"
+    const val DEVICE_KEY_LOST = "ไม่สามารถอ่านข้อมูลบนเครื่องนี้ได้ (กุญแจของเครื่องเปลี่ยนไปหรือข้อมูลถูกแก้ไข) กรุณากู้คืนจากไฟล์สำรอง"
+    const val VAULT_CORRUPT = "ข้อมูลที่เก็บไว้เสียหายหรือถูกแก้ไข"
+    const val GENERIC_ERROR = "เกิดข้อผิดพลาด กรุณาลองอีกครั้ง"
+
+    // strength
+    const val STRENGTH_VERY_WEAK = "อ่อนมาก"
+    const val STRENGTH_WEAK = "อ่อน"
+    const val STRENGTH_FAIR = "พอใช้"
+    const val STRENGTH_STRONG = "แข็งแรง"
+    const val R_TOO_SHORT = "สั้นเกินไป"
+    const val R_COMMON = "เป็นรหัสที่พบบ่อย เดาง่าย"
+    const val R_REPETITIVE = "มีตัวอักษรหรือรูปแบบซ้ำ"
+    const val R_SEQUENTIAL = "มีลำดับต่อเนื่อง เช่น 1234 หรือ abcd"
+    const val R_LOW_VARIETY = "ควรผสมชนิดตัวอักษรให้หลากหลายขึ้น"
+
+    // home / list
+    const val SEARCH = "ค้นหา"
+    const val SEARCH_HINT = "ค้นหาชื่อบริการ ชื่อผู้ใช้ อีเมล"
+    const val LOCK_NOW = "ล็อกทันที"
+    const val SETTINGS = "ตั้งค่า"
+    const val ADD_PASSWORD = "เพิ่มรหัสผ่าน"
+    const val ALL = "ทั้งหมด"
+    const val NEEDS_ATTENTION = "ควรตรวจสอบ"
+    const val EMPTY = "ยังไม่มีรายการ"
+    const val VIEW = "ดูรายการ"
+    const val BADGE_DUP = "ใช้รหัสผ่านซ้ำ"
+    const val BADGE_WEAK = "รหัสผ่านอ่อน"
+    const val BACK = "ย้อนกลับ"
+
+    fun accounts(n: Int) = "$n บัญชี"
+    fun corruptedWarning(n: Int) = "พบ $n รายการที่ถูกแก้ไขหรือเสียหาย จึงไม่ถูกแสดง"
+    fun auditSummary(dupGroups: Int, weak: Int) = "พบรหัสผ่านที่ใช้ซ้ำ $dupGroups กลุ่ม และรหัสผ่านอ่อน $weak รายการ (ตรวจในเครื่องเท่านั้น)"
+
+    fun categoryName(c: String) = when (c) {
+        "social" -> "โซเชียลมีเดีย"
+        "email" -> "อีเมล"
+        "bank" -> "ธนาคาร"
+        "work" -> "งาน"
+        "web" -> "เว็บไซต์ทั่วไป"
+        else -> "อื่น ๆ"
+    }
+
+    // detail / edit
+    const val FIELD_SERVICE = "ชื่อบริการ"
+    const val URL = "URL"
+    const val USERNAME = "ชื่อผู้ใช้"
+    const val EMAIL = "อีเมล"
+    const val PASSWORD = "รหัสผ่าน"
+    const val NOTES = "หมายเหตุ"
+    const val SHOW = "แสดง"
+    const val HIDE = "ซ่อน"
+    const val COPY = "คัดลอก"
+    const val EDIT = "แก้ไข"
+    const val DELETE = "ลบ"
+    const val SAVE = "บันทึก"
+    const val CANCEL = "ยกเลิก"
+    const val CONFIRM = "ยืนยัน"
+    const val CREATED = "สร้างเมื่อ"
+    const val UPDATED = "แก้ไขล่าสุด"
+    const val ADD_TITLE = "เพิ่มรายการ"
+    const val EDIT_TITLE = "แก้ไขรายการ"
+    const val CONFIRM_REVEAL_TITLE = "แสดงรหัสผ่านบนหน้าจอ?"
+    const val CONFIRM_REVEAL_BODY = "รหัสผ่านจะแสดงชั่วคราว 15 วินาที โปรดตรวจสอบว่าไม่มีใครมองหน้าจออยู่"
+    const val CONFIRM_DELETE_TITLE = "ลบรายการนี้?"
+    const val CONFIRM_DELETE_BODY = "การลบไม่สามารถย้อนกลับได้"
+    fun copied(sec: Int) = "คัดลอกแล้ว จะล้างคลิปบอร์ดใน $sec วินาที"
+
+    // generator
+    const val GENERATE = "สร้างรหัส"
+    const val GENERATE_PASSWORD = "สร้างรหัสผ่านแบบสุ่ม"
+    const val LENGTH = "ความยาว"
+    const val OPT_LOWER = "ตัวพิมพ์เล็ก (a-z)"
+    const val OPT_UPPER = "ตัวพิมพ์ใหญ่ (A-Z)"
+    const val OPT_DIGITS = "ตัวเลข (0-9)"
+    const val OPT_SYMBOLS = "สัญลักษณ์"
+    const val OPT_NO_AMBIGUOUS = "ไม่ใช้ตัวที่คล้ายกัน (O/0, l/1)"
+    const val REGENERATE = "สุ่มใหม่"
+    const val USE_THIS = "ใช้รหัสนี้"
+
+    // settings
+    const val S_AUTOLOCK = "ล็อกอัตโนมัติเมื่อไม่ใช้งาน"
+    const val S_BG = "เมื่อออกจากแอป"
+    const val BG_IMMEDIATE = "ล็อกทันที"
+    const val BG_TIMEOUT = "ล็อกตามเวลาที่ตั้ง"
+    const val S_SCREEN_OFF = "ล็อกเมื่อหน้าจอดับ"
+    const val S_BIO = "ปลดล็อกด้วยลายนิ้วมือ"
+    const val BIO_UNAVAILABLE = "อุปกรณ์ไม่รองรับหรือยังไม่ได้ตั้งค่าลายนิ้วมือและหน้าจอล็อก"
+    const val BIO_ENABLE_TITLE = "ยืนยันลายนิ้วมือเพื่อเปิดใช้งาน"
+    const val BIO_UNLOCK_TITLE = "ปลดล็อก SafeVault"
+    const val USE_MASTER_PASSWORD = "ใช้รหัสหลัก"
+    const val BIO_ENABLED = "เปิดใช้ลายนิ้วมือแล้ว (รหัสหลักยังใช้ได้เสมอ)"
+    const val BIO_ENABLE_FAILED = "เปิดใช้ลายนิ้วมือไม่สำเร็จ"
+    const val BIO_INVALIDATED = "ลายนิ้วมือในเครื่องมีการเปลี่ยนแปลง จึงปิดการปลดล็อกด้วยลายนิ้วมือ กรุณาใช้รหัสหลัก"
+    const val S_CLIPBOARD = "ล้างคลิปบอร์ดอัตโนมัติ"
+    const val S_MASTER = "รหัสหลัก"
+    const val CHANGE_MASTER = "เปลี่ยนรหัสหลัก"
+    const val OLD_PASSWORD = "รหัสหลักเดิม"
+    const val NEW_PASSWORD = "รหัสหลักใหม่"
+    const val MASTER_CHANGED = "เปลี่ยนรหัสหลักแล้ว ข้อมูลทั้งหมดยังใช้งานได้"
+    const val OLD_WRONG = "รหัสหลักเดิมไม่ถูกต้อง"
+    fun duration(sec: Int) = if (sec % 60 == 0) "${sec / 60} นาที" else "$sec วินาที"
+
+    // backup
+    const val S_BACKUP = "สำรองและกู้คืนข้อมูล"
+    const val BACKUP_NOTE = "ไฟล์สำรองเข้ารหัสด้วยรหัสผ่านของไฟล์เอง (แยกจากรหัสหลักได้) ไฟล์นี้มีรหัสผ่านทั้งหมดของคุณ เก็บให้ปลอดภัย หากลืมรหัสผ่านไฟล์สำรองจะเปิดไฟล์ไม่ได้"
+    const val EXPORT = "ส่งออกไฟล์สำรอง"
+    const val IMPORT = "นำเข้าไฟล์สำรอง"
+    const val BACKUP_PASSWORD = "รหัสผ่านไฟล์สำรอง"
+    const val EXPORT_SAVED = "บันทึกไฟล์สำรองแล้ว"
+    const val EXPORT_FAILED = "บันทึกไฟล์สำรองไม่สำเร็จ"
+    const val IMPORT_TITLE = "นำเข้าไฟล์สำรอง"
+    const val IMPORT_BODY = "ใส่รหัสผ่านของไฟล์สำรอง"
+    const val BACKUP_WRONG = "รหัสผ่านไฟล์สำรองไม่ถูกต้อง หรือไฟล์ถูกแก้ไข"
+    const val BACKUP_INVALID = "ไฟล์นี้ไม่ใช่ไฟล์สำรองของ SafeVault หรือเสียหาย"
+    const val FILE_UNREADABLE = "อ่านไฟล์ไม่ได้ หรือไฟล์ใหญ่เกินไป"
+    fun exportSkipped(n: Int) = "ข้าม $n รายการที่เสียหาย ไม่ได้ใส่ในไฟล์สำรอง"
+    fun imported(added: Int, skipped: Int) = "นำเข้า $added รายการ (ข้ามรายการซ้ำ $skipped)"
+
+    // danger / about
+    const val S_DANGER = "โซนอันตราย"
+    const val WIPE_ALL = "ลบข้อมูลทั้งหมด"
+    const val WIPE_TITLE = "ลบข้อมูลทั้งหมด?"
+    const val WIPE_WORD = "ลบทั้งหมด"
+    const val WIPE_BODY = "จะลบทุกรายการและรหัสหลักออกจากเครื่องอย่างถาวร กู้คืนไม่ได้ เว้นแต่มีไฟล์สำรอง พิมพ์ \"$WIPE_WORD\" เพื่อยืนยัน"
+    const val WIPED = "ลบข้อมูลทั้งหมดแล้ว"
+    const val S_ABOUT = "ความปลอดภัยและข้อจำกัด"
+    const val ABOUT_TEXT = "• ข้อมูลเก็บในเครื่องนี้เท่านั้น แอปไม่ขอสิทธิ์อินเทอร์เน็ต ไม่มี Analytics\n" +
+        "• เข้ารหัสด้วย AES-256-GCM กุญแจมาจากรหัสหลักผ่าน Argon2id และผูกกับเครื่องด้วย Android Keystore\n" +
+        "• ลืมรหัสหลักแล้วกู้คืนไม่ได้ ผู้พัฒนาไม่มีทางช่วยได้\n" +
+        "• ป้องกันไม่ได้หากเครื่องติดมัลแวร์ ถูก root หรือมี Keylogger/Accessibility ที่เป็นอันตราย\n" +
+        "• แอปนี้ยังไม่ผ่านการตรวจสอบความปลอดภัยจากผู้เชี่ยวชาญอิสระ"
+}
