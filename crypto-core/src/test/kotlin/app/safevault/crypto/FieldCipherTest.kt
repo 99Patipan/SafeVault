@@ -44,7 +44,6 @@ class FieldCipherTest {
         assertArrayEquals(byteArrayOf(1, 2, 3), FieldCipher.decryptBytes(key, 5, "entry", b))
         assertThrows(AuthenticationFailedException::class.java) { FieldCipher.decryptBytes(key, 6, "entry", b) }
     }
-}
 
     @Test fun legacyV1AadStillDecrypts() {
         // Manually seal with v1 AAD shape to simulate pre-upgrade ciphertext.
@@ -62,3 +61,4 @@ class FieldCipherTest {
             FieldCipher.decrypt(key, 1, "passwor", b) // different field name must fail
         }
     }
+}

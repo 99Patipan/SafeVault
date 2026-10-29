@@ -114,7 +114,6 @@ class VaultKeyringTest {
         assertArrayEquals(v.key.raw(), real.unlock(pw, VaultHeader.parse(v.header.serialize())).raw())
         assertThrows(UnlockFailedException::class.java) { real.unlock("bad".toCharArray(), v.header) }
     }
-}
 
     @Test fun rotateDekMakesOldKeyUselessForNewHeader() {
         val v0 = keyring.create(pw, fast)
@@ -140,3 +139,4 @@ class VaultKeyringTest {
             v0.key.close()
         }
     }
+}
