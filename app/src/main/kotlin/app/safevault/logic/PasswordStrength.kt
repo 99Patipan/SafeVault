@@ -52,7 +52,7 @@ object PasswordStrength {
             if (seq > 0) reasons += Reason.SEQUENTIAL
             effective = (s.length - rep - seq).coerceAtLeast(0)
         }
-        if (s.length < 12) reasons += Reason.TOO_SHORT
+        if (s.length < 14) reasons += Reason.TOO_SHORT
 
         val bits = effective * (ln(pool.toDouble()) / ln(2.0))
         var strength = when {
@@ -65,11 +65,11 @@ object PasswordStrength {
         return StrengthResult(strength, bits, reasons)
     }
 
-    /** Master password: >= 12 chars, >= 60 estimated bits, and none of the obvious-weakness flags. */
+    /** Master password: >= 14 chars, >= 64 estimated bits, and none of the obvious-weakness flags. */
     fun isAcceptableMaster(pw: CharSequence): Boolean {
-        if (pw.length < 12) return false
+        if (pw.length < 14) return false
         val r = evaluate(pw)
-        return r.bits >= 60 && r.strength == Strength.STRONG &&
+        return r.bits >= 64 && r.strength == Strength.STRONG &&
             r.reasons.none { it == Reason.COMMON || it == Reason.REPETITIVE || it == Reason.SEQUENTIAL }
     }
 

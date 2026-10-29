@@ -4,12 +4,11 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -20,7 +19,7 @@ import app.safevault.logic.PasswordStrength
 import app.safevault.platform.BiometricGate
 import app.safevault.platform.BiometricKeys
 
-private enum class SettingsDialog { NONE, CHANGE_MASTER, EXPORT, WIPE }
+private enum class SettingsDialog { NONE, CHANGE_MASTER, ROTATE_DEK, EXPORT, WIPE }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -31,57 +30,76 @@ fun SettingsScreen(vm: VaultViewModel, nav: NavController) {
     var dialog by remember { mutableStateOf(SettingsDialog.NONE) }
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(Strings.SETTINGS) },
-                navigationIcon = {
-                    IconButton(onClick = { nav.popBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, Strings.BACK) }
-                },
-            )
-        },
+        topBar = { SvTopBar(Strings.SETTINGS, onBack = { nav.popBackStack() }) },
     ) { pad ->
         Column(
-            Modifier.padding(pad).padding(16.dp).verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
+            Modifier.padding(pad).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
-            SectionTitle(Strings.S_AUTOLOCK)
-            ChipRow(AppSettings.IDLE_OPTIONS, s.idleTimeoutSeconds, { Strings.duration(it) }) {
-                vm.updateSettings(s.copy(idleTimeoutSeconds = it))
-            }
-            Text(Strings.S_BG)
-            ChipRow(BackgroundLock.entries, s.backgroundLock, {
-                if (it == BackgroundLock.IMMEDIATE) Strings.BG_IMMEDIATE else Strings.BG_TIMEOUT
-            }) { vm.updateSettings(s.copy(backgroundLock = it)) }
-            OptionRow(Strings.S_SCREEN_OFF, s.lockOnScreenOff) { vm.updateSettings(s.copy(lockOnScreenOff = it)) }
-            OptionRow(Strings.S_BIO, s.biometricEnabled) { on ->
-                if (!on) vm.disableBiometric()
-                else if (activity == null || !BiometricKeys.isAvailable(ctx)) vm.showMessage(Strings.BIO_UNAVAILABLE)
-                else vm.enableBiometric(BiometricGate(activity))
-            }
-
-            SectionTitle(Strings.S_CLIPBOARD)
-            ChipRow(AppSettings.CLIPBOARD_OPTIONS, s.clipboardClearSeconds, { Strings.duration(it) }) {
-                vm.updateSettings(s.copy(clipboardClearSeconds = it))
+            SettingsGroup(Strings.S_AUTOLOCK) {
+                ChipRow(AppSettings.IDLE_OPTIONS, s.idleTimeoutSeconds, { Strings.duration(it) }) {
+                    vm.updateSettings(s.copy(idleTimeoutSeconds = it))
+                }
+                Text(Strings.S_BG, style = MaterialTheme.typography.labelLarge)
+                ChipRow(BackgroundLock.entries, s.backgroundLock, {
+                    if (it == BackgroundLock.IMMEDIATE) Strings.BG_IMMEDIATE else Strings.BG_TIMEOUT
+                }) { vm.updateSettings(s.copy(backgroundLock = it)) }
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                OptionRow(Strings.S_SCREEN_OFF, s.lockOnScreenOff) { vm.updateSettings(s.copy(lockOnScreenOff = it)) }
+                OptionRow(Strings.S_BIO, s.biometricEnabled) { on ->
+                    if (!on) vm.disableBiometric()
+                    else if (activity == null || !BiometricKeys.isAvailable(ctx)) vm.showMessage(Strings.BIO_UNAVAILABLE)
+                    else vm.enableBiometric(BiometricGate(activity))
+                }
             }
 
-            SectionTitle(Strings.S_MASTER)
-            OutlinedButton(onClick = { dialog = SettingsDialog.CHANGE_MASTER }) { Text(Strings.CHANGE_MASTER) }
-
-            SectionTitle(Strings.S_BACKUP)
-            Text(Strings.BACKUP_NOTE, style = MaterialTheme.typography.bodySmall)
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedButton(onClick = { dialog = SettingsDialog.EXPORT }) { Text(Strings.EXPORT) }
-                OutlinedButton(onClick = { vm.requestImportPicker() }) { Text(Strings.IMPORT) }
+            SettingsGroup(Strings.S_CLIPBOARD) {
+                ChipRow(AppSettings.CLIPBOARD_OPTIONS, s.clipboardClearSeconds, { Strings.duration(it) }) {
+                    vm.updateSettings(s.copy(clipboardClearSeconds = it))
+                }
             }
 
-            SectionTitle(Strings.S_DANGER)
-            Button(
-                onClick = { dialog = SettingsDialog.WIPE },
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
-            ) { Text(Strings.WIPE_ALL) }
+            SettingsGroup(Strings.S_MASTER) {
+                OutlinedButton(onClick = { dialog = SettingsDialog.CHANGE_MASTER }, modifier = Modifier.fillMaxWidth()) {
+                    Text(Strings.CHANGE_MASTER)
+                }
+                Text(
+                    Strings.ROTATE_DEK_HINT,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                OutlinedButton(onClick = { dialog = SettingsDialog.ROTATE_DEK }, modifier = Modifier.fillMaxWidth()) {
+                    Text(Strings.ROTATE_DEK)
+                }
+            }
 
-            SectionTitle(Strings.S_ABOUT)
-            Text(Strings.ABOUT_TEXT, style = MaterialTheme.typography.bodySmall)
+            SettingsGroup(Strings.S_BACKUP) {
+                Text(Strings.BACKUP_NOTE, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    OutlinedButton(onClick = { dialog = SettingsDialog.EXPORT }, modifier = Modifier.weight(1f)) { Text(Strings.EXPORT) }
+                    OutlinedButton(onClick = { vm.requestImportPicker() }, modifier = Modifier.weight(1f)) { Text(Strings.IMPORT) }
+                }
+            }
+
+            SettingsGroup(
+                Strings.S_DANGER,
+                titleColor = MaterialTheme.colorScheme.error,
+                borderColor = MaterialTheme.colorScheme.error.copy(alpha = 0.5f),
+            ) {
+                Button(
+                    onClick = { dialog = SettingsDialog.WIPE },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = MaterialTheme.colorScheme.onError,
+                    ),
+                    modifier = Modifier.fillMaxWidth(),
+                ) { Text(Strings.WIPE_ALL) }
+            }
+
+            SettingsGroup(Strings.S_ABOUT) {
+                Text(Strings.ABOUT_TEXT, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Spacer(Modifier.height(8.dp))
         }
     }
 
@@ -89,6 +107,10 @@ fun SettingsScreen(vm: VaultViewModel, nav: NavController) {
         SettingsDialog.CHANGE_MASTER -> ChangeMasterDialog(
             onDismiss = { dialog = SettingsDialog.NONE },
             onConfirm = { old, new -> dialog = SettingsDialog.NONE; vm.changeMasterPassword(old, new) },
+        )
+        SettingsDialog.ROTATE_DEK -> RotateDekDialog(
+            onDismiss = { dialog = SettingsDialog.NONE },
+            onConfirm = { pw -> dialog = SettingsDialog.NONE; vm.rotateDek(pw) },
         )
         SettingsDialog.EXPORT -> BackupPasswordDialog(
             onDismiss = { dialog = SettingsDialog.NONE },
@@ -99,6 +121,26 @@ fun SettingsScreen(vm: VaultViewModel, nav: NavController) {
             onConfirm = { dialog = SettingsDialog.NONE; vm.wipeAll() },
         )
         SettingsDialog.NONE -> Unit
+    }
+}
+
+@Composable
+private fun SettingsGroup(
+    title: String,
+    titleColor: Color = MaterialTheme.colorScheme.primary,
+    borderColor: Color = MaterialTheme.colorScheme.outlineVariant,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            title,
+            style = MaterialTheme.typography.titleSmall,
+            color = titleColor,
+            modifier = Modifier.padding(start = 4.dp),
+        )
+        SvCard(Modifier.fillMaxWidth(), borderColor = borderColor) {
+            Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp), content = content)
+        }
     }
 }
 
@@ -190,6 +232,33 @@ private fun WipeDialog(onDismiss: () -> Unit, onConfirm: () -> Unit) {
             TextButton(enabled = typed.trim() == Strings.WIPE_WORD, onClick = onConfirm) {
                 Text(Strings.WIPE_ALL, color = MaterialTheme.colorScheme.error)
             }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(Strings.CANCEL) } },
+    )
+}
+
+
+@Composable
+private fun RotateDekDialog(onDismiss: () -> Unit, onConfirm: (CharArray) -> Unit) {
+    var pw by remember { mutableStateOf("") }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(Strings.ROTATE_DEK) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(Strings.ROTATE_DEK_HINT, style = MaterialTheme.typography.bodyMedium)
+                PasswordField(pw, { pw = it }, Strings.MASTER_PASSWORD)
+            }
+        },
+        confirmButton = {
+            TextButton(
+                enabled = pw.isNotEmpty(),
+                onClick = {
+                    val copy = pw.toCharArray()
+                    pw = ""
+                    onConfirm(copy)
+                },
+            ) { Text(Strings.ROTATE_DEK_CONFIRM) }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text(Strings.CANCEL) } },
     )

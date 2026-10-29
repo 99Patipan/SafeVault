@@ -9,7 +9,7 @@ object Strings {
     const val SETUP_INTRO = "รหัสหลักใช้ปลดล็อกข้อมูลทั้งหมด แอปไม่เก็บรหัสหลักไว้ และผู้พัฒนาไม่สามารถกู้คืนให้ได้"
     const val MASTER_PASSWORD = "รหัสหลัก"
     const val CONFIRM_PASSWORD = "ยืนยันรหัสผ่าน"
-    const val MASTER_RULES = "ต้องยาวอย่างน้อย 12 ตัวอักษรและไม่เป็นรหัสที่เดาง่าย (แนะนำให้ใช้วลียาว ๆ หลายคำ)"
+    const val MASTER_RULES = "ต้องยาวอย่างน้อย 14 ตัวอักษรและไม่เป็นรหัสที่เดาง่าย (แนะนำให้ใช้วลียาว ๆ หลายคำ)"
     const val PASSWORDS_DONT_MATCH = "รหัสผ่านไม่ตรงกัน"
     const val SETUP_ACK = "ฉันเข้าใจว่าหากลืมรหัสหลักและไม่มีไฟล์สำรองที่กู้คืนได้ จะไม่สามารถกู้ข้อมูลกลับมาได้"
     const val CREATE_VAULT = "สร้างที่เก็บรหัสผ่าน"
@@ -115,6 +115,10 @@ object Strings {
     const val OLD_PASSWORD = "รหัสหลักเดิม"
     const val NEW_PASSWORD = "รหัสหลักใหม่"
     const val MASTER_CHANGED = "เปลี่ยนรหัสหลักแล้ว ข้อมูลทั้งหมดยังใช้งานได้"
+    const val ROTATE_DEK = "หมุนกุญแจข้อมูล (DEK)"
+    const val ROTATE_DEK_HINT = "สร้างกุญแจเข้ารหัสข้อมูลชุดใหม่แล้วเข้ารหัสรายการทั้งหมดใหม่ ใช้เมื่อสงสัยว่ากุญแจเก่าอาจรั่ว — ต้องใส่รหัสหลัก และลายนิ้วมือจะถูกปิดชั่วคราว"
+    const val ROTATE_DEK_DONE = "หมุนกุญแจข้อมูลแล้ว เปิดลายนิ้วมือใหม่ได้ในการตั้งค่า"
+    const val ROTATE_DEK_CONFIRM = "หมุนกุญแจข้อมูล"
     const val OLD_WRONG = "รหัสหลักเดิมไม่ถูกต้อง"
     fun duration(sec: Int) = if (sec % 60 == 0) "${sec / 60} นาที" else "$sec วินาที"
 
@@ -147,4 +151,20 @@ object Strings {
         "• ลืมรหัสหลักแล้วกู้คืนไม่ได้ ผู้พัฒนาไม่มีทางช่วยได้\n" +
         "• ป้องกันไม่ได้หากเครื่องติดมัลแวร์ ถูก root หรือมี Keylogger/Accessibility ที่เป็นอันตราย\n" +
         "• แอปนี้ยังไม่ผ่านการตรวจสอบความปลอดภัยจากผู้เชี่ยวชาญอิสระ"
+
+    // ui polish
+    const val UNLOCK_SUBTITLE = "ใส่รหัสหลักเพื่อเปิดที่เก็บรหัสผ่านของคุณ"
+    const val CATEGORIES = "หมวดหมู่"
+    const val VAULT_READY = "ที่เก็บรหัสผ่านพร้อมใช้งาน"
+    const val HOME_STATUS_NOTE = "เข้ารหัสและเก็บไว้ในเครื่องนี้เท่านั้น"
+    const val ALL_GOOD = "ไม่พบรหัสผ่านซ้ำหรืออ่อนจากการตรวจในเครื่อง"
+    const val EMPTY_TITLE = "ยังไม่มีรหัสผ่านที่บันทึกไว้"
+    const val EMPTY_BODY = "แตะปุ่ม \"เพิ่มรหัสผ่าน\" เพื่อเริ่มบันทึกบัญชีแรกของคุณ"
+    const val NO_RESULTS = "ไม่พบรายการที่ตรงกับคำค้น"
+    const val SEARCH_CLEAR = "ล้างคำค้น"
+    const val REVEAL_AUTO_HIDE = "รหัสผ่านจะถูกซ่อนอัตโนมัติใน 15 วินาที"
+    const val SECTION_SERVICE = "ข้อมูลบริการ"
+    const val SECTION_LOGIN = "ข้อมูลเข้าสู่ระบบ"
+    const val SECTION_ACCOUNT = "ข้อมูลบัญชี"
+    fun protectedCount(n: Int) = "$n บัญชีที่เก็บไว้อย่างปลอดภัย"
 }

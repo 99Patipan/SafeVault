@@ -12,15 +12,23 @@ object AesGcm {
     const val NONCE_SIZE = 12
     const val TAG_SIZE = 16
     private const val TRANSFORMATION = "AES/GCM/NoPadding"
+
+    // One SecureRandom per call site is unnecessary; the JRE instance is seeded and thread-safe enough.
+    // Still avoid a shared mutable counter of our own — only nextBytes is used.
     private val random = SecureRandom()
 
     fun encrypt(key: ByteArray, plaintext: ByteArray, aad: ByteArray): ByteArray {
         require(key.size == KEY_SIZE) { "Key must be 256-bit" }
         val nonce = ByteArray(NONCE_SIZE).also { random.nextBytes(it) }
         val cipher = Cipher.getInstance(TRANSFORMATION)
-        cipher.init(Cipher.ENCRYPT_MODE, SecretKeySpec(key, "AES"), GCMParameterSpec(TAG_SIZE * 8, nonce))
-        cipher.updateAAD(aad)
-        return nonce + cipher.doFinal(plaintext)
+        val keySpec = SecretKeySpec(key, "AES")
+        try {
+            cipher.init(Cipher.ENCRYPT_MODE, keySpec, GCMParameterSpec(TAG_SIZE * 8, nonce))
+            cipher.updateAAD(aad)
+            return nonce + cipher.doFinal(plaintext)
+        } finally {
+            // SecretKeySpec does not expose destroy() on all API levels; best-effort only.
+        }
     }
 
     /** Throws [AuthenticationFailedException] if the tag does not verify; never returns unauthenticated data. */

@@ -103,6 +103,50 @@ class VaultRepository(
     suspend fun putBiometricBlob(blob: ByteArray) = dao.putMeta(VaultMetaEntity(BIO_META_ID, blob))
     suspend fun deleteBiometricBlob() = dao.deleteMetaById(BIO_META_ID)
 
+    /**
+     * Rotates the data-encryption key: re-seals every entry under a fresh DEK and replaces the header.
+     * Biometric unlock is disabled (blob deleted) because it still wraps the old DEK; user can re-enable.
+     * Atomic: either all rows + header commit, or nothing changes.
+     *
+     * @throws UnlockFailedException wrong password or tampered header
+     * @throws AuthenticationFailedException / VaultFormatException if an existing row is corrupted
+     */
+    suspend fun rotateDek(password: CharArray): VaultKey {
+        val header = loadHeader()
+        val rotation = withContext(Dispatchers.Default) {
+            keyring.beginRotateDek(password, header, kdfParams)
+        }
+        try {
+            val rows = dao.allEntries()
+            val resealed = ArrayList<EntryEntity>(rows.size)
+            for (e in rows) {
+                val plain = FieldCipher.decryptBytes(rotation.oldKey, e.id, FIELD, e.blob)
+                try {
+                    resealed += EntryEntity(
+                        e.id,
+                        FieldCipher.encryptBytes(rotation.newKey, e.id, FIELD, plain),
+                        e.createdAt,
+                        e.updatedAt,
+                    )
+                } finally {
+                    plain.fill(0)
+                }
+            }
+            db.withTransaction {
+                for (row in resealed) dao.update(row)
+                dao.putMeta(headerRow(rotation.header))
+                dao.deleteMetaById(BIO_META_ID) // old biometric wrap is for previous DEK
+            }
+            val out = rotation.newKey
+            rotation.oldKey.close()
+            // Transfer ownership of newKey to caller; prevent DekRotation.close from wiping it
+            return out
+        } catch (e: Throwable) {
+            rotation.close()
+            throw e
+        }
+    }
+
     /** Irreversibly deletes every entry, the vault header and the biometric blob (UI must confirm first). */
     suspend fun wipeEverything() {
         db.withTransaction { dao.deleteAllEntries(); dao.deleteMeta() }

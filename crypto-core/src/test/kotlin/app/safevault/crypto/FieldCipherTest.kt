@@ -45,3 +45,20 @@ class FieldCipherTest {
         assertThrows(AuthenticationFailedException::class.java) { FieldCipher.decryptBytes(key, 6, "entry", b) }
     }
 }
+
+    @Test fun legacyV1AadStillDecrypts() {
+        // Manually seal with v1 AAD shape to simulate pre-upgrade ciphertext.
+        val field = "entry"
+        val fBytes = field.toByteArray(Charsets.UTF_8)
+        val aadV1 = java.nio.ByteBuffer.allocate(1 + 8 + fBytes.size)
+            .put(1.toByte()).putLong(42L).put(fBytes).array()
+        val blob = AesGcm.encrypt(key.raw(), "legacy-secret".toByteArray(), aadV1)
+        assertEquals("legacy-secret", FieldCipher.decrypt(key, 42, field, blob))
+    }
+
+    @Test fun v2RejectsV1StyleFieldAmbiguitySwap() {
+        val b = FieldCipher.encrypt(key, 1, "password", "a")
+        assertThrows(AuthenticationFailedException::class.java) {
+            FieldCipher.decrypt(key, 1, "passwor", b) // different field name must fail
+        }
+    }

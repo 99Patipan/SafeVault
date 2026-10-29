@@ -12,9 +12,19 @@ class VaultKey internal constructor(bytes: ByteArray) : Closeable {
     @Synchronized
     internal fun raw(): ByteArray = material ?: throw IllegalStateException("Vault is locked")
 
-    /** Gives [block] the raw DEK (needed to wrap it under a biometric-bound key). Must not retain or modify it. */
+    /**
+     * Gives [block] a **copy** of the raw DEK. The copy is zeroed after [block] returns.
+     * Callers must not retain the array beyond the callback (biometric wrap is done inside the block).
+     */
     @Synchronized
-    fun <T> withKeyBytes(block: (ByteArray) -> T): T = block(raw())
+    fun <T> withKeyBytes(block: (ByteArray) -> T): T {
+        val copy = raw().clone()
+        try {
+            return block(copy)
+        } finally {
+            copy.wipe()
+        }
+    }
 
     @Synchronized
     override fun close() {

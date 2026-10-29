@@ -115,3 +115,28 @@ class VaultKeyringTest {
         assertThrows(UnlockFailedException::class.java) { real.unlock("bad".toCharArray(), v.header) }
     }
 }
+
+    @Test fun rotateDekMakesOldKeyUselessForNewHeader() {
+        val v0 = keyring.create(pw, fast)
+        val blob = FieldCipher.encrypt(v0.key, 1, "password", "s3cret")
+        val rot = keyring.beginRotateDek(pw, v0.header, fast)
+        try {
+            // Old ciphertext still opens with old key
+            assertEquals("s3cret", FieldCipher.decrypt(rot.oldKey, 1, "password", blob))
+            // New header unlocks to a different DEK
+            val unlocked = keyring.unlock(pw, rot.header)
+            assertFalse(rot.oldKey.raw().contentEquals(unlocked.raw()))
+            assertArrayEquals(rot.newKey.raw(), unlocked.raw())
+            // Old blob does not decrypt under new key
+            assertThrows(AuthenticationFailedException::class.java) {
+                FieldCipher.decrypt(rot.newKey, 1, "password", blob)
+            }
+            // Re-seal under new key works
+            val resealed = FieldCipher.encrypt(rot.newKey, 1, "password", "s3cret")
+            assertEquals("s3cret", FieldCipher.decrypt(unlocked, 1, "password", resealed))
+            unlocked.close()
+        } finally {
+            rot.close()
+            v0.key.close()
+        }
+    }
