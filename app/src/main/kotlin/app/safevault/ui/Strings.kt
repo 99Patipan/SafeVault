@@ -147,4 +147,20 @@ object Strings {
         "• ลืมรหัสหลักแล้วกู้คืนไม่ได้ ผู้พัฒนาไม่มีทางช่วยได้\n" +
         "• ป้องกันไม่ได้หากเครื่องติดมัลแวร์ ถูก root หรือมี Keylogger/Accessibility ที่เป็นอันตราย\n" +
         "• แอปนี้ยังไม่ผ่านการตรวจสอบความปลอดภัยจากผู้เชี่ยวชาญอิสระ"
+
+    // ui polish
+    const val UNLOCK_SUBTITLE = "ใส่รหัสหลักเพื่อเปิดที่เก็บรหัสผ่านของคุณ"
+    const val CATEGORIES = "หมวดหมู่"
+    const val VAULT_READY = "ที่เก็บรหัสผ่านพร้อมใช้งาน"
+    const val HOME_STATUS_NOTE = "เข้ารหัสและเก็บไว้ในเครื่องนี้เท่านั้น"
+    const val ALL_GOOD = "ไม่พบรหัสผ่านซ้ำหรืออ่อนจากการตรวจในเครื่อง"
+    const val EMPTY_TITLE = "ยังไม่มีรหัสผ่านที่บันทึกไว้"
+    const val EMPTY_BODY = "แตะปุ่ม \"เพิ่มรหัสผ่าน\" เพื่อเริ่มบันทึกบัญชีแรกของคุณ"
+    const val NO_RESULTS = "ไม่พบรายการที่ตรงกับคำค้น"
+    const val SEARCH_CLEAR = "ล้างคำค้น"
+    const val REVEAL_AUTO_HIDE = "รหัสผ่านจะถูกซ่อนอัตโนมัติใน 15 วินาที"
+    const val SECTION_SERVICE = "ข้อมูลบริการ"
+    const val SECTION_LOGIN = "ข้อมูลเข้าสู่ระบบ"
+    const val SECTION_ACCOUNT = "ข้อมูลบัญชี"
+    fun protectedCount(n: Int) = "$n บัญชีที่เก็บไว้อย่างปลอดภัย"
 }

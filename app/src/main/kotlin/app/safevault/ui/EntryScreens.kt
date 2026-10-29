@@ -1,17 +1,21 @@
 package app.safevault.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
@@ -31,7 +35,6 @@ import kotlin.math.roundToInt
 private val dateFormat: DateTimeFormatter =
     DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM).withZone(ZoneId.systemDefault())
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DetailScreen(vm: VaultViewModel, nav: NavController, id: Long) {
     val entries by vm.entries.collectAsStateWithLifecycle()
@@ -41,6 +44,7 @@ fun DetailScreen(vm: VaultViewModel, nav: NavController, id: Long) {
     var revealed by remember(id) { mutableStateOf(false) }
     var confirmReveal by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
+    val scheme = MaterialTheme.colorScheme
 
     LaunchedEffect(revealed) { if (revealed) { delay(15_000); revealed = false } }
     if (entry == null) {
@@ -55,44 +59,90 @@ fun DetailScreen(vm: VaultViewModel, nav: NavController, id: Long) {
     }
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(c.service) },
-                navigationIcon = {
-                    IconButton(onClick = { nav.popBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, Strings.BACK) }
-                },
-            )
-        },
+        topBar = { SvTopBar("", onBack = { nav.popBackStack() }) },
     ) { pad ->
         Column(
-            Modifier.padding(pad).padding(16.dp).verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
+            Modifier.padding(pad).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Text(categoryEmoji(c.category) + " " + Strings.categoryName(c.category))
-            if (c.url.isNotEmpty()) FieldRow(Strings.URL, c.url, null)
-            if (c.username.isNotEmpty()) FieldRow(Strings.USERNAME, c.username) { copy(c.username) }
-            if (c.email.isNotEmpty()) FieldRow(Strings.EMAIL, c.email) { copy(c.email) }
-
-            Column {
-                Text(Strings.PASSWORD, style = MaterialTheme.typography.labelMedium)
-                Text(
-                    if (revealed) c.password else "••••••••••",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontFamily = FontFamily.Monospace,
-                )
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    TextButton(onClick = { if (revealed) revealed = false else confirmReveal = true }) {
-                        Text(if (revealed) Strings.HIDE else Strings.SHOW)
-                    }
-                    TextButton(enabled = c.password.isNotEmpty(), onClick = { copy(c.password) }) { Text(Strings.COPY) }
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                CategoryTile(c.category, 64.dp)
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(c.service, style = MaterialTheme.typography.headlineSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    Text(Strings.categoryName(c.category), style = MaterialTheme.typography.bodyMedium, color = scheme.onSurfaceVariant)
                 }
             }
-            if (c.notes.isNotEmpty()) FieldRow(Strings.NOTES, c.notes, null)
-            Text(Strings.CREATED + ": " + dateFormat.format(Instant.ofEpochMilli(entry.createdAt)), style = MaterialTheme.typography.bodySmall)
-            Text(Strings.UPDATED + ": " + dateFormat.format(Instant.ofEpochMilli(entry.updatedAt)), style = MaterialTheme.typography.bodySmall)
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Button(onClick = { nav.navigate("edit/$id") }) { Text(Strings.EDIT) }
-                OutlinedButton(onClick = { confirmDelete = true }) { Text(Strings.DELETE) }
+
+            val fields = buildList {
+                if (c.url.isNotEmpty()) add(Triple(Strings.URL, c.url, false))
+                if (c.username.isNotEmpty()) add(Triple(Strings.USERNAME, c.username, true))
+                if (c.email.isNotEmpty()) add(Triple(Strings.EMAIL, c.email, true))
+            }
+            if (fields.isNotEmpty()) {
+                SectionTitle(Strings.SECTION_ACCOUNT)
+                SvCard(Modifier.fillMaxWidth()) {
+                    fields.forEachIndexed { i, (label, value, copyable) ->
+                        if (i > 0) HorizontalDivider(color = scheme.outlineVariant)
+                        FieldRow(label, value, if (copyable) ({ copy(value) }) else null)
+                    }
+                }
+            }
+
+            SectionTitle(Strings.PASSWORD)
+            SvCard(Modifier.fillMaxWidth()) {
+                Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Box(
+                        Modifier.fillMaxWidth().clip(MaterialTheme.shapes.medium)
+                            .background(scheme.surfaceContainer).padding(horizontal = 14.dp, vertical = 14.dp),
+                    ) {
+                        Text(
+                            if (revealed) c.password else "••••••••••",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontFamily = FontFamily.Monospace,
+                        )
+                    }
+                    if (revealed) {
+                        Text(Strings.REVEAL_AUTO_HIDE, style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant)
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        FilledTonalButton(
+                            onClick = { if (revealed) revealed = false else confirmReveal = true },
+                            modifier = Modifier.weight(1f),
+                        ) { Text(if (revealed) Strings.HIDE else Strings.SHOW) }
+                        Button(
+                            enabled = c.password.isNotEmpty(),
+                            onClick = { copy(c.password) },
+                            modifier = Modifier.weight(1f),
+                        ) { Text(Strings.COPY) }
+                    }
+                }
+            }
+
+            if (c.notes.isNotEmpty()) {
+                SectionTitle(Strings.NOTES)
+                SvCard(Modifier.fillMaxWidth()) {
+                    Text(c.notes, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(16.dp))
+                }
+            }
+
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp), modifier = Modifier.padding(horizontal = 4.dp)) {
+                Text(
+                    Strings.CREATED + ": " + dateFormat.format(Instant.ofEpochMilli(entry.createdAt)),
+                    style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant,
+                )
+                Text(
+                    Strings.UPDATED + ": " + dateFormat.format(Instant.ofEpochMilli(entry.updatedAt)),
+                    style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant,
+                )
+            }
+
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.padding(bottom = 16.dp)) {
+                Button(onClick = { nav.navigate("edit/$id") }, modifier = Modifier.weight(1f).height(48.dp)) { Text(Strings.EDIT) }
+                OutlinedButton(
+                    onClick = { confirmDelete = true },
+                    modifier = Modifier.weight(1f).height(48.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = scheme.error),
+                ) { Text(Strings.DELETE) }
             }
         }
     }
@@ -103,15 +153,19 @@ fun DetailScreen(vm: VaultViewModel, nav: NavController, id: Long) {
     }
     if (confirmDelete) {
         ConfirmDialog(Strings.CONFIRM_DELETE_TITLE, Strings.CONFIRM_DELETE_BODY, Strings.DELETE,
-            onConfirm = { confirmDelete = false; vm.delete(id) { nav.popBackStack() } }, onDismiss = { confirmDelete = false })
+            onConfirm = { confirmDelete = false; vm.delete(id) { nav.popBackStack() } },
+            onDismiss = { confirmDelete = false }, destructive = true)
     }
 }
 
 @Composable
 private fun FieldRow(label: String, value: String, onCopy: (() -> Unit)?) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
+    Row(
+        Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 10.dp, bottom = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
         Column(Modifier.weight(1f)) {
-            Text(label, style = MaterialTheme.typography.labelMedium)
+            Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Text(value, style = MaterialTheme.typography.bodyLarge)
         }
         if (onCopy != null) TextButton(onClick = onCopy) { Text(Strings.COPY) }
@@ -136,19 +190,13 @@ fun EditScreen(vm: VaultViewModel, nav: NavController, id: Long) {
     var showGenerator by remember { mutableStateOf(false) }
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(if (id == 0L) Strings.ADD_TITLE else Strings.EDIT_TITLE) },
-                navigationIcon = {
-                    IconButton(onClick = { nav.popBackStack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, Strings.BACK) }
-                },
-            )
-        },
+        topBar = { SvTopBar(if (id == 0L) Strings.ADD_TITLE else Strings.EDIT_TITLE, onBack = { nav.popBackStack() }) },
     ) { pad ->
         Column(
-            Modifier.padding(pad).imePadding().padding(16.dp).verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            Modifier.padding(pad).imePadding().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
+            SectionTitle(Strings.CATEGORIES)
             Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 for (c in Categories.ALL) {
                     FilterChip(
@@ -158,25 +206,44 @@ fun EditScreen(vm: VaultViewModel, nav: NavController, id: Long) {
                     )
                 }
             }
-            OutlinedTextField(service, { service = it }, label = { Text(Strings.FIELD_SERVICE) }, singleLine = true, modifier = Modifier.fillMaxWidth())
-            OutlinedTextField(url, { url = it }, label = { Text(Strings.URL) }, singleLine = true, modifier = Modifier.fillMaxWidth())
-            OutlinedTextField(username, { username = it }, label = { Text(Strings.USERNAME) }, singleLine = true, modifier = Modifier.fillMaxWidth())
-            OutlinedTextField(email, { email = it }, label = { Text(Strings.EMAIL) }, singleLine = true, modifier = Modifier.fillMaxWidth())
-            PasswordField(password, { password = it }, Strings.PASSWORD, show = showPw)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                TextButton(onClick = { showPw = !showPw }) { Text(if (showPw) Strings.HIDE else Strings.SHOW) }
-                TextButton(onClick = { showGenerator = true }) { Text(Strings.GENERATE) }
+
+            SectionTitle(Strings.SECTION_SERVICE)
+            SvCard(Modifier.fillMaxWidth()) {
+                Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    SvTextField(service, { service = it }, Strings.FIELD_SERVICE)
+                    SvTextField(url, { url = it }, Strings.URL, keyboardType = KeyboardType.Uri)
+                }
             }
-            if (password.isNotEmpty()) StrengthMeter(PasswordStrength.evaluate(password))
-            OutlinedTextField(notes, { notes = it }, label = { Text(Strings.NOTES) }, minLines = 3, modifier = Modifier.fillMaxWidth())
+
+            SectionTitle(Strings.SECTION_LOGIN)
+            SvCard(Modifier.fillMaxWidth()) {
+                Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    SvTextField(username, { username = it }, Strings.USERNAME)
+                    SvTextField(email, { email = it }, Strings.EMAIL, keyboardType = KeyboardType.Email)
+                    PasswordField(password, { password = it }, Strings.PASSWORD, show = showPw, onShowChange = { showPw = it })
+                    if (password.isNotEmpty()) StrengthMeter(PasswordStrength.evaluate(password))
+                    OutlinedButton(onClick = { showGenerator = true }, modifier = Modifier.fillMaxWidth()) {
+                        Text(Strings.GENERATE_PASSWORD)
+                    }
+                }
+            }
+
+            SectionTitle(Strings.NOTES)
+            SvCard(Modifier.fillMaxWidth()) {
+                Column(Modifier.fillMaxWidth().padding(16.dp)) {
+                    SvTextField(notes, { notes = it }, Strings.NOTES, singleLine = false, minLines = 3)
+                }
+            }
+
             Button(
                 enabled = service.isNotBlank(),
                 onClick = {
                     val content = EntryContent(category, service.trim(), url.trim(), username.trim(), email.trim(), password, notes)
                     vm.save(if (id == 0L) null else id, content) { nav.popBackStack() }
                 },
-                modifier = Modifier.fillMaxWidth(),
-            ) { Text(Strings.SAVE) }
+                modifier = Modifier.fillMaxWidth().height(52.dp),
+            ) { Text(Strings.SAVE, style = MaterialTheme.typography.titleSmall) }
+            Spacer(Modifier.height(8.dp))
         }
     }
 
@@ -200,8 +267,22 @@ fun GeneratorDialog(onDismiss: () -> Unit, onUse: (String) -> Unit) {
         title = { Text(Strings.GENERATE_PASSWORD) },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(pw, style = MaterialTheme.typography.titleMedium, fontFamily = FontFamily.Monospace)
-                Text(Strings.LENGTH + ": " + opts.length)
+                Box(
+                    Modifier.fillMaxWidth().clip(MaterialTheme.shapes.medium)
+                        .background(MaterialTheme.colorScheme.surfaceContainer).padding(14.dp),
+                ) {
+                    Text(
+                        pw.ifEmpty { "—" },
+                        style = MaterialTheme.typography.titleMedium,
+                        fontFamily = FontFamily.Monospace,
+                    )
+                }
+                if (pw.isNotEmpty()) StrengthMeter(PasswordStrength.evaluate(pw))
+                Text(
+                    Strings.LENGTH + ": " + opts.length,
+                    style = MaterialTheme.typography.labelLarge,
+                    modifier = Modifier.padding(top = 4.dp),
+                )
                 Slider(
                     value = opts.length.toFloat(),
                     onValueChange = { regen(opts.copy(length = it.roundToInt())) },
@@ -224,10 +305,18 @@ fun GeneratorDialog(onDismiss: () -> Unit, onUse: (String) -> Unit) {
     )
 }
 
+/** Label on the left, switch on the right; the whole row toggles. */
 @Composable
 fun OptionRow(label: String, checked: Boolean, onChange: (Boolean) -> Unit) {
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        Switch(checked = checked, onCheckedChange = onChange)
-        Text(label)
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .toggleable(value = checked, role = Role.Switch, onValueChange = onChange)
+            .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Text(label, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+        Switch(checked = checked, onCheckedChange = null)
     }
 }
