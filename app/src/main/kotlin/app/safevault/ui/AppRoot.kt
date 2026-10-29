@@ -3,15 +3,23 @@ package app.safevault.ui
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
@@ -68,15 +76,28 @@ fun AppRoot(vm: VaultViewModel = viewModel()) {
         }
     }
 
-    Box(Modifier.fillMaxSize()) {
+    // Themed background here so Setup/Unlock (which have no Scaffold) follow light/dark correctly.
+    Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         when (state) {
             AppState.Loading -> CircularProgressIndicator(Modifier.align(Alignment.Center))
             AppState.NeedSetup -> SetupScreen(vm)
             AppState.Locked -> UnlockScreen(vm)
             AppState.Unlocked -> UnlockedApp(vm)
         }
-        if (busy) CircularProgressIndicator(Modifier.align(Alignment.Center))
-        SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter))
+        if (busy) {
+            // Dim and swallow touches while crypto work runs, so a second tap cannot start a duplicate action.
+            Box(
+                Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.32f)).pointerInput(Unit) {},
+                contentAlignment = Alignment.Center,
+            ) {
+                Surface(
+                    shape = MaterialTheme.shapes.extraLarge,
+                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    shadowElevation = 6.dp,
+                ) { CircularProgressIndicator(Modifier.padding(24.dp)) }
+            }
+        }
+        SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter).navigationBarsPadding())
     }
     if (state == AppState.Unlocked && hasPendingImport) ImportPasswordDialog(vm)
 }
