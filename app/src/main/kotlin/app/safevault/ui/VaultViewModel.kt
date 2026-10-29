@@ -169,6 +169,27 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+
+    /** Re-encrypts every entry under a fresh DEK. Disables biometric until the user enables it again. */
+    fun rotateDek(password: CharArray) {
+        launchSafe {
+            try {
+                val key = withBusy { repo.rotateDek(password) }
+                session.unlock(key)
+                BiometricKeys.delete()
+                updateSettings(_settings.value.copy(biometricEnabled = false))
+                _message.value = Strings.ROTATE_DEK_DONE
+                reload()
+            } catch (e: UnlockFailedException) {
+                _message.value = Strings.OLD_WRONG
+            } catch (e: VaultException) {
+                _message.value = Strings.GENERIC_ERROR
+            } finally {
+                password.fill('\u0000')
+            }
+        }
+    }
+
     // ---- biometric ----
     fun enableBiometric(gate: BiometricGate) {
         launchSafe {
