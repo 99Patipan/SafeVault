@@ -39,6 +39,7 @@ class PasswordStrengthTest {
         assertTrue(PasswordStrength.isAcceptableMaster("Gk7#mQ2x9Lp!vR"))
         assertTrue(PasswordStrength.isAcceptableMaster("correct horse battery staple"))
         assertFalse("too short", PasswordStrength.isAcceptableMaster("Gk7#mQ2x9L!"))
+        assertFalse("13 chars is below the 14 minimum", PasswordStrength.isAcceptableMaster("Gk7#mQ2x9Lp!v"))
         assertFalse("common", PasswordStrength.isAcceptableMaster("Password123!!!"))
         assertFalse("repetitive", PasswordStrength.isAcceptableMaster("aaaaaaaaaaaaaaaa"))
         assertFalse("empty", PasswordStrength.isAcceptableMaster(""))

@@ -50,27 +50,22 @@ fun categoryEmoji(cat: String): String = when (cat) {
 
 /** One hue per category so lists are scannable at a glance. */
 fun categoryTint(cat: String): Color = when (cat) {
-    Categories.SOCIAL -> Color(0xFFB388FF)   // neon violet
-    Categories.EMAIL -> Color(0xFF40C4FF)    // sky cyan
-    Categories.BANK -> Color(0xFF69F0AE)     // mint
-    Categories.WORK -> Color(0xFFFFAB40)     // amber
-    Categories.WEB -> Color(0xFF00E5FF)      // electric cyan
-    else -> Color(0xFF78909C)
+    Categories.SOCIAL -> Color(0xFF9B5DE5)
+    Categories.EMAIL -> Color(0xFF2F80ED)
+    Categories.BANK -> Color(0xFF1FA463)
+    Categories.WORK -> Color(0xFFE08A00)
+    Categories.WEB -> Color(0xFF00A3A3)
+    else -> Color(0xFF6B7C93)
 }
 
-/** Rounded tile with an emoji on a soft tinted background (stronger glow in dark). */
+/** Rounded tile with an emoji on a soft tinted background. */
 @Composable
 fun EmojiTile(emoji: String, tint: Color, size: Dp = 44.dp, modifier: Modifier = Modifier) {
     Box(
         modifier
             .size(size)
-            .clip(RoundedCornerShape(size * 0.28f))
-            .background(tint.copy(alpha = if (isDarkTheme()) 0.22f else 0.14f))
-            .border(
-                width = 1.dp,
-                color = tint.copy(alpha = if (isDarkTheme()) 0.45f else 0.25f),
-                shape = RoundedCornerShape(size * 0.28f),
-            ),
+            .clip(RoundedCornerShape(size * 0.3f))
+            .background(tint.copy(alpha = if (isDarkTheme()) 0.26f else 0.15f)),
         contentAlignment = Alignment.Center,
     ) {
         Text(emoji, fontSize = (size.value * 0.46f).sp)
@@ -83,37 +78,28 @@ fun CategoryTile(cat: String, size: Dp = 44.dp, modifier: Modifier = Modifier) =
 
 @Composable
 fun BrandMark(size: Dp, modifier: Modifier = Modifier) {
-    val scheme = MaterialTheme.colorScheme
     Box(
         modifier
             .size(size)
-            .clip(RoundedCornerShape(size * 0.28f))
-            .background(scheme.primary.copy(alpha = if (isDarkTheme()) 0.18f else 0.12f))
-            .border(
-                width = 1.5.dp,
-                color = scheme.primary.copy(alpha = if (isDarkTheme()) 0.55f else 0.35f),
-                shape = RoundedCornerShape(size * 0.28f),
-            ),
+            .clip(RoundedCornerShape(size * 0.3f))
+            .background(MaterialTheme.colorScheme.primaryContainer),
         contentAlignment = Alignment.Center,
     ) {
         Text("🔐", fontSize = (size.value * 0.5f).sp)
     }
 }
 
-/** Glass-style surface for grouped content. Clickable when [onClick] is given. */
+/** Standard surface for grouped content: white/raised fill with a hairline border. Clickable when [onClick] is given. */
 @Composable
 fun SvCard(
     modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null,
     color: Color = MaterialTheme.colorScheme.surfaceContainerLow,
-    borderColor: Color = glassBorderColor(),
+    borderColor: Color = MaterialTheme.colorScheme.outlineVariant,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val shape = MaterialTheme.shapes.large
-    val base = modifier
-        .clip(shape)
-        .background(color)
-        .border(1.dp, borderColor, shape)
+    val base = modifier.clip(shape).background(color).border(1.dp, borderColor, shape)
     val m = if (onClick != null) base.clickable(role = Role.Button, onClick = onClick) else base
     Column(m, content = content)
 }

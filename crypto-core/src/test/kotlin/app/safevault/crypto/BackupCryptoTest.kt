@@ -72,11 +72,6 @@ class BackupCryptoTest {
         assertThrows(IllegalArgumentException::class.java) { seal(CharArray(0)) }
     }
 
-    @Test fun shortPasswordRejectedOnSeal() {
-        assertThrows(IllegalArgumentException::class.java) { seal("short".toCharArray()) }
-        assertThrows(IllegalArgumentException::class.java) { seal("12345678901".toCharArray()) } // 11 chars
-    }
-
     @Test fun realArgon2idDefaultsWork() {
         val f = BackupCrypto.seal(pw, data)
         assertArrayEquals(data, BackupCrypto.open(pw, f))

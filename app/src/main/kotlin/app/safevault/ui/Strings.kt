@@ -115,10 +115,6 @@ object Strings {
     const val OLD_PASSWORD = "รหัสหลักเดิม"
     const val NEW_PASSWORD = "รหัสหลักใหม่"
     const val MASTER_CHANGED = "เปลี่ยนรหัสหลักแล้ว ข้อมูลทั้งหมดยังใช้งานได้"
-    const val ROTATE_DEK = "หมุนกุญแจข้อมูล (DEK)"
-    const val ROTATE_DEK_HINT = "สร้างกุญแจเข้ารหัสข้อมูลชุดใหม่แล้วเข้ารหัสรายการทั้งหมดใหม่ ใช้เมื่อสงสัยว่ากุญแจเก่าอาจรั่ว — ต้องใส่รหัสหลัก และลายนิ้วมือจะถูกปิดชั่วคราว"
-    const val ROTATE_DEK_DONE = "หมุนกุญแจข้อมูลแล้ว เปิดลายนิ้วมือใหม่ได้ในการตั้งค่า"
-    const val ROTATE_DEK_CONFIRM = "หมุนกุญแจข้อมูล"
     const val OLD_WRONG = "รหัสหลักเดิมไม่ถูกต้อง"
     fun duration(sec: Int) = if (sec % 60 == 0) "${sec / 60} นาที" else "$sec วินาที"
 
@@ -167,4 +163,8 @@ object Strings {
     const val SECTION_LOGIN = "ข้อมูลเข้าสู่ระบบ"
     const val SECTION_ACCOUNT = "ข้อมูลบัญชี"
     fun protectedCount(n: Int) = "$n บัญชีที่เก็บไว้อย่างปลอดภัย"
+    const val ROTATE_DEK = "หมุนกุญแจข้อมูล"
+    const val ROTATE_DEK_HINT = "สร้างกุญแจเข้ารหัสข้อมูลชุดใหม่แล้วเข้ารหัสรายการทั้งหมดใหม่ ใช้เมื่อสงสัยว่ากุญแจเก่าอาจรั่ว ต้องใส่รหัสหลัก และลายนิ้วมือจะถูกปิดไว้จนกว่าจะเปิดใหม่ ไฟล์สำรองเก่ายังเปิดได้ด้วยรหัสไฟล์เดิม"
+    const val ROTATE_DEK_DONE = "หมุนกุญแจข้อมูลแล้ว เปิดลายนิ้วมือใหม่ได้ในการตั้งค่า"
+    const val ROTATE_DEK_CONFIRM = "หมุนกุญแจ"
 }

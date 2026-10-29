@@ -26,8 +26,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -53,8 +51,6 @@ fun HomeScreen(vm: VaultViewModel, nav: NavController) {
                 onClick = { nav.navigate("edit/0") },
                 icon = { Icon(Icons.Filled.Add, null) },
                 text = { Text(Strings.ADD_PASSWORD) },
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
             )
         },
     ) { pad ->
@@ -127,13 +123,13 @@ private fun SearchPill(onClick: () -> Unit) {
             .height(52.dp)
             .clip(CircleShape)
             .background(scheme.surfaceContainerLow)
-            .border(1.dp, glassBorderColor(), CircleShape)
+            .border(1.dp, scheme.outlineVariant, CircleShape)
             .clickable(role = Role.Button, onClick = onClick)
             .padding(horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Icon(Icons.Filled.Search, null, tint = scheme.primary.copy(alpha = 0.85f))
+        Icon(Icons.Filled.Search, null, tint = scheme.onSurfaceVariant)
         Text(
             Strings.SEARCH_HINT,
             style = MaterialTheme.typography.bodyLarge,
@@ -147,26 +143,12 @@ private fun SearchPill(onClick: () -> Unit) {
 @Composable
 private fun VaultStatusCard(count: Int, healthy: Boolean) {
     val scheme = MaterialTheme.colorScheme
-    val isDark = isDarkTheme()
-    // High-tech gradient panel
-    val bgBrush = Brush.linearGradient(
-        colors = if (isDark) {
-            listOf(Color(0xFF003D4A), Color(0xFF0A1A2E), Color(0xFF001A28))
-        } else {
-            listOf(Color(0xFF00B8D4), Color(0xFF0088A3), Color(0xFF006B7D))
-        },
-    )
-    val fg = if (isDark) Color(0xFFB8F5FF) else Color(0xFFFFFFFF)
+    val fg = scheme.onPrimaryContainer
     Column(
         Modifier
             .fillMaxWidth()
             .clip(MaterialTheme.shapes.extraLarge)
-            .background(bgBrush)
-            .border(
-                width = 1.dp,
-                color = if (isDark) Color(0xFF00E5FF).copy(alpha = 0.35f) else Color.Transparent,
-                shape = MaterialTheme.shapes.extraLarge,
-            )
+            .background(scheme.primaryContainer)
             .padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
@@ -177,28 +159,20 @@ private fun VaultStatusCard(count: Int, healthy: Boolean) {
                     style = MaterialTheme.typography.titleLarge,
                     color = fg,
                 )
-                Text(Strings.HOME_STATUS_NOTE, style = MaterialTheme.typography.bodyMedium, color = fg.copy(alpha = 0.78f))
+                Text(Strings.HOME_STATUS_NOTE, style = MaterialTheme.typography.bodyMedium, color = fg.copy(alpha = 0.8f))
             }
             Box(
-                Modifier
-                    .size(56.dp)
-                    .clip(MaterialTheme.shapes.large)
-                    .background(fg.copy(alpha = 0.12f))
-                    .border(1.dp, fg.copy(alpha = 0.30f), MaterialTheme.shapes.large),
+                Modifier.size(56.dp).clip(MaterialTheme.shapes.large).background(fg.copy(alpha = 0.16f)),
                 contentAlignment = Alignment.Center,
             ) { Icon(Icons.Filled.Lock, null, tint = fg, modifier = Modifier.size(28.dp)) }
         }
         if (count > 0 && healthy) {
             Row(
-                Modifier
-                    .clip(CircleShape)
-                    .background(fg.copy(alpha = 0.12f))
-                    .border(1.dp, fg.copy(alpha = 0.25f), CircleShape)
-                    .padding(horizontal = 12.dp, vertical = 6.dp),
+                Modifier.clip(CircleShape).background(fg.copy(alpha = 0.16f)).padding(horizontal = 12.dp, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Icon(Icons.Filled.Check, null, tint = if (isDark) Color(0xFF69F0AE) else fg, modifier = Modifier.size(16.dp))
+                Icon(Icons.Filled.Check, null, tint = fg, modifier = Modifier.size(16.dp))
                 Text(Strings.ALL_GOOD, style = MaterialTheme.typography.labelMedium, color = fg)
             }
         }

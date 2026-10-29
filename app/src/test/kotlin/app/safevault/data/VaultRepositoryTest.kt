@@ -219,6 +219,59 @@ class VaultRepositoryTest {
         }
     }
 
+    @Test fun rotateDekKeepsEntriesReadableAndRetiresTheOldKey() {
+        blocking {
+            val key = repo.createVault(pw)
+            val a = repo.add(key, secret)
+            val b = repo.add(key, secret.copy(service = "อื่น", password = "second-ลับ"))
+            repo.putBiometricBlob(byteArrayOf(1, 2, 3))
+            val oldRow = db.dao().entry(a)!!
+            val oldHeader = db.dao().header()!!
+
+            val newKey = repo.rotateDek(pw)
+            assertFalse(oldHeader.contentEquals(db.dao().header()!!))
+            assertNull("biometric blob wraps the old DEK and must be gone", repo.getBiometricBlob())
+            assertEquals(secret, repo.get(newKey, a)!!.content)
+            assertEquals("second-ลับ", repo.get(newKey, b)!!.content.password)
+            assertEquals(0, repo.getAll(newKey).corruptedIds.size)
+            // The ciphertext as it was before rotation no longer opens under the new key.
+            try { FieldCipher.decryptBytes(newKey, a, "entry", oldRow.blob); fail() } catch (_: AuthenticationFailedException) {}
+            // A fresh unlock with the same master password yields the same new key.
+            assertEquals(secret, repo.get(repo.unlock(pw), a)!!.content)
+            newKey.close()
+        }
+    }
+
+    @Test fun failedRotationChangesNothing() {
+        blocking {
+            val key = repo.createVault(pw)
+            val id = repo.add(key, secret)
+            val header = db.dao().header()!!
+            val row = db.dao().entry(id)!!
+            try { repo.rotateDek("nope-nope-1".toCharArray()); fail() } catch (_: UnlockFailedException) {}
+            assertArrayEquals(header, db.dao().header()!!)
+            assertArrayEquals(row.blob, db.dao().entry(id)!!.blob)
+            assertEquals(secret, repo.get(key, id)!!.content)
+        }
+    }
+
+    @Test fun rotationAbortsAndRollsBackWhenARowIsCorrupted() {
+        blocking {
+            val key = repo.createVault(pw)
+            val good = repo.add(key, secret)
+            val bad = repo.add(key, secret.copy(service = "เสีย"))
+            val tampered = db.dao().entry(bad)!!
+            val flipped = tampered.blob.clone().also { it[it.size - 1] = (it[it.size - 1] + 1).toByte() }
+            db.dao().update(EntryEntity(tampered.id, flipped, tampered.createdAt, tampered.updatedAt))
+            val header = db.dao().header()!!
+            val goodRow = db.dao().entry(good)!!
+            try { repo.rotateDek(pw); fail() } catch (_: VaultException) {}
+            assertArrayEquals(header, db.dao().header()!!)
+            assertArrayEquals(goodRow.blob, db.dao().entry(good)!!.blob)
+            assertEquals(secret, repo.get(key, good)!!.content)
+        }
+    }
+
     @Test fun addAllIsAtomicAndRollsBackOnFailure() {
         blocking {
             val key = repo.createVault(pw)

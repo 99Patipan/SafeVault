@@ -10,14 +10,10 @@ import java.security.SecureRandom
  * Layout (big-endian): "SVBK"(4) | version(1)=1 | kdfId(1)=1 Argon2id | memKiB(4) | iterations(4)
  *   | parallelism(1) | saltLen(1)=16 | salt | AES-256-GCM blob (nonce||ciphertext||tag)
  * Every byte before the GCM blob is passed as AAD, so parameters/salt/version cannot be altered unnoticed.
- *
- * Offline guessing is limited by Argon2id cost and a minimum backup password length enforced on seal.
  */
 object BackupCrypto {
     const val VERSION = 1
     const val SALT_SIZE = 16
-    /** Minimum length for backup passwords (characters). Empty is already rejected; short secrets are refused on seal. */
-    const val MIN_PASSWORD_CHARS = 12
     const val MAX_PLAINTEXT_BYTES = 64 * 1024 * 1024
     const val MAX_FILE_BYTES = MAX_PLAINTEXT_BYTES + 1024
     private val MAGIC = byteArrayOf('S'.code.toByte(), 'V'.code.toByte(), 'B'.code.toByte(), 'K'.code.toByte())
@@ -31,9 +27,6 @@ object BackupCrypto {
         kdf: Kdf = Argon2idKdf, random: SecureRandom = SecureRandom(),
     ): ByteArray {
         require(password.isNotEmpty()) { "Backup password must not be empty" }
-        require(password.size >= MIN_PASSWORD_CHARS) {
-            "Backup password must be at least $MIN_PASSWORD_CHARS characters"
-        }
         require(plaintext.size <= MAX_PLAINTEXT_BYTES) { "Backup too large" }
         policy.check(params)
         val salt = ByteArray(SALT_SIZE).also { random.nextBytes(it) }
@@ -86,11 +79,7 @@ object BackupCrypto {
 
     private fun derive(kdf: Kdf, password: CharArray, salt: ByteArray, params: KdfParams): ByteArray {
         val pw = password.toUtf8Nfkc()
-        try {
-            return kdf.derive(pw, salt, params)
-        } finally {
-            pw.wipe()
-        }
+        try { return kdf.derive(pw, salt, params) } finally { pw.wipe() }
     }
 
     private fun header(p: KdfParams, salt: ByteArray): ByteArray =

@@ -22,6 +22,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.time.LocalDate
 
 sealed interface AppState {
@@ -135,10 +137,18 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     // ---- entries ----
+    /**
+     * Serializes everything that writes sealed data or the header (save, import, password change, DEK rotation).
+     * The key is fetched INSIDE the lock, so a write queued behind a rotation uses the new key, never the old one.
+     */
+    private val writeLock = Mutex()
+
     fun save(id: Long?, content: EntryContent, onDone: () -> Unit) {
         launchSafe {
-            val key = session.requireKey()
-            if (id == null) repo.add(key, content) else repo.update(key, id, content)
+            writeLock.withLock {
+                val key = session.requireKey()
+                if (id == null) repo.add(key, content) else repo.update(key, id, content)
+            }
             session.touch()
             reload()
             onDone()
@@ -158,8 +168,9 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
     fun changeMasterPassword(oldPassword: CharArray, newPassword: CharArray) {
         launchSafe {
             try {
-                val key = withBusy { repo.changePassword(oldPassword, newPassword) }
-                session.unlock(key)
+                withBusy {
+                    writeLock.withLock { session.unlock(repo.changePassword(oldPassword, newPassword)) }
+                }
                 _message.value = Strings.MASTER_CHANGED
             } catch (e: UnlockFailedException) {
                 _message.value = Strings.OLD_WRONG
@@ -169,21 +180,19 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-
-    /** Re-encrypts every entry under a fresh DEK. Disables biometric until the user enables it again. */
+    /** Re-encrypts every entry under a fresh DEK. Biometric unlock is turned off until the user enables it again. */
     fun rotateDek(password: CharArray) {
         launchSafe {
             try {
-                val key = withBusy { repo.rotateDek(password) }
-                session.unlock(key)
+                withBusy {
+                    writeLock.withLock { session.unlock(repo.rotateDek(password)) }
+                }
                 BiometricKeys.delete()
                 updateSettings(_settings.value.copy(biometricEnabled = false))
                 _message.value = Strings.ROTATE_DEK_DONE
                 reload()
             } catch (e: UnlockFailedException) {
                 _message.value = Strings.OLD_WRONG
-            } catch (e: VaultException) {
-                _message.value = Strings.GENERIC_ERROR
             } finally {
                 password.fill('\u0000')
             }
@@ -270,7 +279,7 @@ class VaultViewModel(application: Application) : AndroidViewModel(application) {
         launchSafe {
             val bytes = pendingImportBytes ?: return@launchSafe
             try {
-                val r = withBusy { app.backup.import(session.requireKey(), bytes, backupPassword) }
+                val r = withBusy { writeLock.withLock { app.backup.import(session.requireKey(), bytes, backupPassword) } }
                 setPendingImport(null)
                 reload()
                 _message.value = Strings.imported(r.added, r.skippedDuplicates)

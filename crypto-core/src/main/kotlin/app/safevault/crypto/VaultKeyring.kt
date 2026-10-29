@@ -5,18 +5,11 @@ import java.security.SecureRandom
 class CreatedVault(val header: VaultHeader, val key: VaultKey)
 
 /**
- * Result of beginning a DEK rotation: old key decrypts existing rows; new key + header must be
- * committed only after every row has been re-sealed under [newKey].
+ * Result of beginning a DEK rotation: [oldKey] decrypts existing rows, [newKey] + [header] must be committed only
+ * after every row has been re-sealed under [newKey]. The caller takes over [newKey] and closes [oldKey].
  */
-class DekRotation(
-    val header: VaultHeader,
-    val oldKey: VaultKey,
-    val newKey: VaultKey,
-) : AutoCloseable {
-    override fun close() {
-        oldKey.close()
-        newKey.close()
-    }
+class DekRotation(val header: VaultHeader, val oldKey: VaultKey, val newKey: VaultKey) : AutoCloseable {
+    override fun close() { oldKey.close(); newKey.close() }
 }
 
 /**
@@ -24,7 +17,7 @@ class DekRotation(
  * - No password hash is stored; a correct password is proven only by the GCM tag verifying.
  * - The master password is never used as a data key.
  * - Changing the password re-wraps the same DEK (no bulk re-encryption, no data loss).
- * - Rotating the DEK issues a fresh DEK and requires re-encrypting every entry (see [beginRotateDek]).
+ * - Rotating the DEK issues a fresh random DEK and requires re-encrypting every entry (see [beginRotateDek]).
  * - There is no recovery path: no escrow, no backdoor.
  */
 class VaultKeyring(
@@ -50,9 +43,7 @@ class VaultKeyring(
         val kek = deriveKek(password, header.salt, header.params)
         try {
             val dek = AesGcm.decrypt(kek, header.wrappedDek, header.aad())
-            if (dek.size != AesGcm.KEY_SIZE) {
-                dek.wipe(); throw UnlockFailedException()
-            }
+            if (dek.size != AesGcm.KEY_SIZE) { dek.wipe(); throw UnlockFailedException() }
             return VaultKey(dek)
         } catch (e: AuthenticationFailedException) {
             throw UnlockFailedException()
@@ -77,22 +68,17 @@ class VaultKeyring(
     }
 
     /**
-     * Verifies [password], unlocks the current DEK, generates a fresh DEK, and wraps it under a new salt.
-     * Caller must re-encrypt all ciphertext with [DekRotation.newKey], persist [DekRotation.header],
-     * then close the rotation (zeros both keys if still open).
+     * Verifies [password], unlocks the current DEK, generates a fresh DEK and wraps it under a new salt.
+     * The caller must re-encrypt all ciphertext with [DekRotation.newKey] and persist [DekRotation.header]
+     * in one atomic step.
      */
-    fun beginRotateDek(
-        password: CharArray,
-        header: VaultHeader,
-        newParams: KdfParams = header.params,
-    ): DekRotation {
+    fun beginRotateDek(password: CharArray, header: VaultHeader, newParams: KdfParams = header.params): DekRotation {
         policy.check(newParams)
         val oldKey = unlock(password, header)
         val newDek = ByteArray(AesGcm.KEY_SIZE).also { random.nextBytes(it) }
         val newKey = VaultKey(newDek)
         try {
-            val newHeader = wrap(password, newSalt(), newParams, newDek)
-            return DekRotation(newHeader, oldKey, newKey)
+            return DekRotation(wrap(password, newSalt(), newParams, newDek), oldKey, newKey)
         } catch (e: Throwable) {
             oldKey.close(); newKey.close(); throw e
         }
@@ -102,11 +88,7 @@ class VaultKeyring(
 
     private fun deriveKek(password: CharArray, salt: ByteArray, params: KdfParams): ByteArray {
         val pw = password.toUtf8Nfkc()
-        try {
-            return kdf.derive(pw, salt, params)
-        } finally {
-            pw.wipe()
-        }
+        try { return kdf.derive(pw, salt, params) } finally { pw.wipe() }
     }
 
     private fun wrap(password: CharArray, salt: ByteArray, params: KdfParams, dek: ByteArray): VaultHeader {

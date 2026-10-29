@@ -104,47 +104,39 @@ class VaultRepository(
     suspend fun deleteBiometricBlob() = dao.deleteMetaById(BIO_META_ID)
 
     /**
-     * Rotates the data-encryption key: re-seals every entry under a fresh DEK and replaces the header.
-     * Biometric unlock is disabled (blob deleted) because it still wraps the old DEK; user can re-enable.
-     * Atomic: either all rows + header commit, or nothing changes.
+     * Rotates the data-encryption key: re-seals every entry under a fresh DEK and replaces the header, all in ONE
+     * transaction (rows are read inside it, so nothing written meanwhile can be missed or overwritten). The commit is
+     * refused if the stored header changed since it was read (e.g. a concurrent password change). The biometric blob is
+     * deleted because it still wraps the old DEK. Callers must not run other vault writes concurrently (the view model
+     * serializes them with a lock) because they would be sealed under the old key.
      *
      * @throws UnlockFailedException wrong password or tampered header
-     * @throws AuthenticationFailedException / VaultFormatException if an existing row is corrupted
+     * @throws AuthenticationFailedException / VaultFormatException if an existing row is corrupted (nothing changes)
+     * @return the new key; the caller owns it
      */
     suspend fun rotateDek(password: CharArray): VaultKey {
-        val header = loadHeader()
-        val rotation = withContext(Dispatchers.Default) {
-            keyring.beginRotateDek(password, header, kdfParams)
-        }
+        val stored = dao.header() ?: throw IllegalStateException("No vault has been created")
+        val header = parseStored(stored)
+        val rotation = withContext(Dispatchers.Default) { keyring.beginRotateDek(password, header, kdfParams) }
         try {
-            val rows = dao.allEntries()
-            val resealed = ArrayList<EntryEntity>(rows.size)
-            for (e in rows) {
-                val plain = FieldCipher.decryptBytes(rotation.oldKey, e.id, FIELD, e.blob)
-                try {
-                    resealed += EntryEntity(
-                        e.id,
-                        FieldCipher.encryptBytes(rotation.newKey, e.id, FIELD, plain),
-                        e.createdAt,
-                        e.updatedAt,
-                    )
-                } finally {
-                    plain.fill(0)
-                }
-            }
             db.withTransaction {
-                for (row in resealed) dao.update(row)
+                check(dao.header()?.contentEquals(stored) == true) { "Vault changed during rotation" }
+                for (e in dao.allEntries()) {
+                    val plain = FieldCipher.decryptBytes(rotation.oldKey, e.id, FIELD, e.blob)
+                    try {
+                        dao.update(EntryEntity(e.id, FieldCipher.encryptBytes(rotation.newKey, e.id, FIELD, plain), e.createdAt, e.updatedAt))
+                    } finally {
+                        plain.fill(0)
+                    }
+                }
                 dao.putMeta(headerRow(rotation.header))
-                dao.deleteMetaById(BIO_META_ID) // old biometric wrap is for previous DEK
+                dao.deleteMetaById(BIO_META_ID)
             }
-            val out = rotation.newKey
-            rotation.oldKey.close()
-            // Transfer ownership of newKey to caller; prevent DekRotation.close from wiping it
-            return out
         } catch (e: Throwable) {
-            rotation.close()
-            throw e
+            rotation.close(); throw e
         }
+        rotation.oldKey.close()
+        return rotation.newKey
     }
 
     /** Irreversibly deletes every entry, the vault header and the biometric blob (UI must confirm first). */
@@ -155,8 +147,10 @@ class VaultRepository(
     // ---- internals ----
     private fun headerRow(h: VaultHeader) = VaultMetaEntity(HEADER_META_ID, protector.protect(h.serialize()))
 
-    private suspend fun loadHeader(): VaultHeader {
-        val stored = dao.header() ?: throw IllegalStateException("No vault has been created")
+    private suspend fun loadHeader(): VaultHeader =
+        parseStored(dao.header() ?: throw IllegalStateException("No vault has been created"))
+
+    private fun parseStored(stored: ByteArray): VaultHeader {
         val plain = protector.unprotect(stored)
         try { return VaultHeader.parse(plain) } finally { plain.fill(0) }
     }

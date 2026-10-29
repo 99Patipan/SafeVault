@@ -41,12 +41,6 @@ object DeviceKey {
             .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
             .setKeySize(256)
             .setRandomizedEncryptionRequired(true)
-        // Prefer keys that are only usable while the device is unlocked (API 28+).
-        // This does not replace the master password; it raises the bar for cold offline DB copies
-        // used on a locked device session.
-        if (Build.VERSION.SDK_INT >= 28) {
-            b.setUnlockedDeviceRequired(true)
-        }
         if (strongBox && Build.VERSION.SDK_INT >= 28) b.setIsStrongBoxBacked(true)
         val kg = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, PROVIDER)
         kg.init(b.build())

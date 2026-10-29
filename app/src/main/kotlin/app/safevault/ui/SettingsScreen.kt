@@ -63,11 +63,6 @@ fun SettingsScreen(vm: VaultViewModel, nav: NavController) {
                 OutlinedButton(onClick = { dialog = SettingsDialog.CHANGE_MASTER }, modifier = Modifier.fillMaxWidth()) {
                     Text(Strings.CHANGE_MASTER)
                 }
-                Text(
-                    Strings.ROTATE_DEK_HINT,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
                 OutlinedButton(onClick = { dialog = SettingsDialog.ROTATE_DEK }, modifier = Modifier.fillMaxWidth()) {
                     Text(Strings.ROTATE_DEK)
                 }
@@ -177,6 +172,28 @@ private fun ChangeMasterDialog(onDismiss: () -> Unit, onConfirm: (CharArray, Cha
 }
 
 @Composable
+private fun RotateDekDialog(onDismiss: () -> Unit, onConfirm: (CharArray) -> Unit) {
+    var pw by remember { mutableStateOf("") }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(Strings.ROTATE_DEK) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(Strings.ROTATE_DEK_HINT, style = MaterialTheme.typography.bodyMedium)
+                PasswordField(pw, { pw = it }, Strings.MASTER_PASSWORD)
+            }
+        },
+        confirmButton = {
+            TextButton(
+                enabled = pw.isNotEmpty(),
+                onClick = { val copy = pw.toCharArray(); pw = ""; onConfirm(copy) },
+            ) { Text(Strings.ROTATE_DEK_CONFIRM) }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(Strings.CANCEL) } },
+    )
+}
+
+@Composable
 private fun BackupPasswordDialog(onDismiss: () -> Unit, onConfirm: (CharArray) -> Unit) {
     var pw by remember { mutableStateOf("") }
     var again by remember { mutableStateOf("") }
@@ -232,33 +249,6 @@ private fun WipeDialog(onDismiss: () -> Unit, onConfirm: () -> Unit) {
             TextButton(enabled = typed.trim() == Strings.WIPE_WORD, onClick = onConfirm) {
                 Text(Strings.WIPE_ALL, color = MaterialTheme.colorScheme.error)
             }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(Strings.CANCEL) } },
-    )
-}
-
-
-@Composable
-private fun RotateDekDialog(onDismiss: () -> Unit, onConfirm: (CharArray) -> Unit) {
-    var pw by remember { mutableStateOf("") }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(Strings.ROTATE_DEK) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(Strings.ROTATE_DEK_HINT, style = MaterialTheme.typography.bodyMedium)
-                PasswordField(pw, { pw = it }, Strings.MASTER_PASSWORD)
-            }
-        },
-        confirmButton = {
-            TextButton(
-                enabled = pw.isNotEmpty(),
-                onClick = {
-                    val copy = pw.toCharArray()
-                    pw = ""
-                    onConfirm(copy)
-                },
-            ) { Text(Strings.ROTATE_DEK_CONFIRM) }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text(Strings.CANCEL) } },
     )
